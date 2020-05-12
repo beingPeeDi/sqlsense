@@ -1,0 +1,23 @@
+# Initial Release (on GitHub) (released 12th May 2020)
+
+- SELECT Statement Parsing
+  - SELECT Statements with Basic Constructs
+    - SELECT Clause
+    - FROM Clause
+    - JOIN Clause
+      - JOIN ON Clause
+    - WHERE Clause
+    - GROUP BY Clause
+    - HAVING Clause
+    - ORDER BY Clause
+  - LIMIT Clause (for Postgres)
+  - Identifier Types
+    - Identifier (for table, columns)
+    - Computed Identifier (e.g. Col1+Col2, Col1/100, 200*200)
+    - Constant Identifier (only for SELECT Clause)(e.g. SELECT 1 FROM ...)
+    - Function
+    - Sub Query
+  - CASE Conditional Expression Constructs
+    - Is listed as Identifier when used in SELECT Clause
+- Metadata Extraction
+  - Extract Datasets, Datafields used in PostgresSQL statement.
