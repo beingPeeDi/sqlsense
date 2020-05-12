@@ -2,7 +2,7 @@
 name: Missing SQL Construct
 about: Let us know which SQL construct is missing.
 title: ""
-labels: feature
+labels: missing
 assignees: beingPeeDi
 
 ---
