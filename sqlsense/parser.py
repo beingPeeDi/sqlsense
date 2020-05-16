@@ -288,9 +288,9 @@ class SqlParser(object):
 
     def _process_as(self, stmt, token_group, token):
         if token_group.ttype == ST.SelectClause:
-            # Case: SELECT 1 AS ConstantField
+            # Case: SELECT CASE ... END AS case_alias
             token_group = token_group.merge_into_token_group(
-                ST.Identifier, token_list_start_index_included=token_group.last_token_index())
+                ST.ComputedIdentifier, token_list_start_index_included=token_group.last_token_index())
         else:
             while token_group.parent.ttype not in (ST.SelectClause, ST.FromClause):
                 token_group = self._switch_to_parent(token_group)
@@ -337,6 +337,7 @@ class SqlParser(object):
             # Get out of the Token Group until you find Case Expression
             token_group = self._switch_to_parent(token_group)
         token_group.append(token)
+        token_group = self._switch_to_parent(token_group)
         return token_group
 
     def _process_literal_number(self, stmt, token_group, token):

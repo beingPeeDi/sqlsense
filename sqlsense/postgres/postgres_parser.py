@@ -28,7 +28,6 @@ class PostgresParser(SqlParser):
                (token_group.ttype == ST.Function and token_group.last_token().ttype == ST.ArgumentList) or
                (token_group.ttype == ST.SubQuery and token_group.last_token().match_type_value(Token(T.Punctuation, ')'))) or
                (token_group.ttype == ST.ComputedIdentifier and token_group.last_token().ttype != T.Operator) or
-               (token_group.ttype == ST.CaseExpression and token_group.last_token().ttype == T.Keyword and token_group.last_token().value() in ('END', 'AS')) or
                token_group.ttype == ST.SelectConstantIdentifier)):
             # Alias withot AS Keyword. Here TokenGroup has to be direct child of Select/From clause
             # and must satisfy other appropriate conditions
@@ -40,9 +39,9 @@ class PostgresParser(SqlParser):
             # here Computed Identifier => A.x+B.y and Identifier => B.y followed by Alias
             return self._process_name(stmt, self._switch_to_parent(token_group), token)
         elif (token_group.ttype == ST.SelectClause and token_group.last_token().ttype not in (T.Keyword, T.Punctuation)):
-            # Case SELECT 1 SomeAlias FROM ...
+            # Case: SELECT CASE ... END AS case_alias
             token_group = token_group.merge_into_token_group(
-                ST.Identifier, token_list_start_index_included=token_group.last_token_index())
+                ST.ComputedIdentifier, token_list_start_index_included=token_group.last_token_index())
             token.ttype = ST.AliasName
             token_group.append(token)
         elif token_group.ttype == ST.Identifier:

@@ -1307,6 +1307,7 @@ class SelectStatementTest(unittest.TestCase):
             100 % 4 computed_field_5,
             2 as constant_value ,
             3,
+            (9),
             (abc.p % 100),
             4 other_constant_value
         from abc join xyz
@@ -1423,6 +1424,15 @@ class SelectStatementTest(unittest.TestCase):
                     get_token(T.Whitespace, ' '),
                     TokenGroup(ttype=ST.SelectConstantIdentifier, token_list=[
                         get_token(T.Number.Integer, '3'),
+                    ]),
+                    get_token(T.Punctuation, ','),
+                    get_token(T.Whitespace, ' '),
+                    TokenGroup(ttype=ST.ComputedIdentifier, token_list=[
+                        TokenGroup(ttype=ST.RoundBracket, token_list=[
+                            get_token(T.Punctuation, '('),
+                            get_token(T.Number.Integer, '9'),
+                            get_token(T.Punctuation, ')'),
+                        ]),
                     ]),
                     get_token(T.Punctuation, ','),
                     get_token(T.Whitespace, ' '),
@@ -1557,7 +1567,9 @@ class SelectStatementTest(unittest.TestCase):
                 else 'MANY'
                end num_to_text,
                case when col2 > 500 then 500
-                    when col2 > 200 then 200
+                    when col2 > 200 then case when col2 > 400 then 400 
+                                              else 200 
+                                         end
                     else 0
                end as credit
         from sometable
@@ -1568,102 +1580,139 @@ class SelectStatementTest(unittest.TestCase):
                 TokenGroup(ttype=ST.SelectClause, token_list=[
                     get_token(T.Keyword, 'SELECT'),
                     get_token(T.Whitespace, ' '),
-                    TokenGroup(ttype=ST.CaseExpression, token_list=[
-                        get_token(T.Keyword, 'CASE'),
-                        get_token(T.Whitespace, ' '),
-                        TokenGroup(ttype=ST.Identifier, token_list=[
-                            get_token(T.Name, 'col1'),
-                        ]),
-                        get_token(T.Whitespace, ' '),
-                        TokenGroup(ttype=ST.WhenExpression, token_list=[
-                            get_token(T.Keyword, 'WHEN'),
+                    TokenGroup(ttype=ST.ComputedIdentifier, token_list=[
+                        TokenGroup(ttype=ST.CaseExpression, token_list=[
+                            get_token(T.Keyword, 'CASE'),
                             get_token(T.Whitespace, ' '),
-                            get_token(T.Number.Integer, '0'),
-                            get_token(T.Whitespace, ' '),
-                            TokenGroup(ttype=ST.ThenExpression, token_list=[
-                                get_token(T.Keyword, 'THEN'),
-                                get_token(T.Whitespace, ' '),
-                                get_token(T.String, "'ZERO'"),
+                            TokenGroup(ttype=ST.Identifier, token_list=[
+                                get_token(T.Name, 'col1'),
                             ]),
-                        ]),
-                        get_token(T.Whitespace, ' '),
-                        TokenGroup(ttype=ST.WhenExpression, token_list=[
-                            get_token(T.Keyword, 'WHEN'),
                             get_token(T.Whitespace, ' '),
-                            get_token(T.Number.Integer, '1'),
-                            get_token(T.Punctuation, ','),
-                            get_token(T.Whitespace, ' '),
-                            get_token(T.Number.Integer, '2'),
-                            get_token(T.Whitespace, ' '),
-                            TokenGroup(ttype=ST.ThenExpression, token_list=[
-                                get_token(T.Keyword, 'THEN'),
+                            TokenGroup(ttype=ST.WhenExpression, token_list=[
+                                get_token(T.Keyword, 'WHEN'),
                                 get_token(T.Whitespace, ' '),
-                                get_token(T.String, "'ONE_OR_TWO'"),
+                                get_token(T.Number.Integer, '0'),
+                                get_token(T.Whitespace, ' '),
+                                TokenGroup(ttype=ST.ThenExpression, token_list=[
+                                    get_token(T.Keyword, 'THEN'),
+                                    get_token(T.Whitespace, ' '),
+                                    get_token(T.String, "'ZERO'"),
+                                ]),
                             ]),
-                        ]),
-                        get_token(T.Whitespace, ' '),
-                        TokenGroup(ttype=ST.ElseExpression, token_list=[
-                            get_token(T.Keyword, 'ELSE'),
                             get_token(T.Whitespace, ' '),
-                            get_token(T.String, "'MANY'"),
+                            TokenGroup(ttype=ST.WhenExpression, token_list=[
+                                get_token(T.Keyword, 'WHEN'),
+                                get_token(T.Whitespace, ' '),
+                                get_token(T.Number.Integer, '1'),
+                                get_token(T.Punctuation, ','),
+                                get_token(T.Whitespace, ' '),
+                                get_token(T.Number.Integer, '2'),
+                                get_token(T.Whitespace, ' '),
+                                TokenGroup(ttype=ST.ThenExpression, token_list=[
+                                    get_token(T.Keyword, 'THEN'),
+                                    get_token(T.Whitespace, ' '),
+                                    get_token(T.String, "'ONE_OR_TWO'"),
+                                ]),
+                            ]),
+                            get_token(T.Whitespace, ' '),
+                            TokenGroup(ttype=ST.ElseExpression, token_list=[
+                                get_token(T.Keyword, 'ELSE'),
+                                get_token(T.Whitespace, ' '),
+                                get_token(T.String, "'MANY'"),
+                            ]),
+                            get_token(T.Whitespace, ' '),
+                            get_token(T.Keyword, 'END'),
                         ]),
-                        get_token(T.Whitespace, ' '),
-                        get_token(T.Keyword, 'END'),
                         get_token(T.Whitespace, ' '),
                         get_token(ST.AliasName, 'num_to_text'),
                     ]),
                     get_token(T.Punctuation, ','),
                     get_token(T.Whitespace, ' '),
-                    TokenGroup(ttype=ST.CaseExpression, token_list=[
-                        get_token(T.Keyword, 'CASE'),
-                        get_token(T.Whitespace, ' '),
-                        TokenGroup(ttype=ST.WhenExpression, token_list=[
-                            get_token(T.Keyword, 'WHEN'),
+                    TokenGroup(ttype=ST.ComputedIdentifier, token_list=[
+                        TokenGroup(ttype=ST.CaseExpression, token_list=[
+                            get_token(T.Keyword, 'CASE'),
                             get_token(T.Whitespace, ' '),
-                            TokenGroup(ttype=ST.Comparison, token_list=[
-                                TokenGroup(ttype=ST.Identifier, token_list=[
-                                    get_token(T.Name, 'col2'),
+                            TokenGroup(ttype=ST.WhenExpression, token_list=[
+                                get_token(T.Keyword, 'WHEN'),
+                                get_token(T.Whitespace, ' '),
+                                TokenGroup(ttype=ST.Comparison, token_list=[
+                                    TokenGroup(ttype=ST.Identifier, token_list=[
+                                        get_token(T.Name, 'col2'),
+                                    ]),
+                                    get_token(T.Whitespace, ' '),
+                                    get_token(ST.ComparisonOperator, '>'),
+                                    get_token(T.Whitespace, ' '),
+                                    get_token(T.Number.Integer, '500'),
                                 ]),
                                 get_token(T.Whitespace, ' '),
-                                get_token(ST.ComparisonOperator, '>'),
-                                get_token(T.Whitespace, ' '),
-                                get_token(T.Number.Integer, '500'),
+                                TokenGroup(ttype=ST.ThenExpression, token_list=[
+                                    get_token(T.Keyword, 'THEN'),
+                                    get_token(T.Whitespace, ' '),
+                                    get_token(T.Number.Integer, '500'),
+                                ]),
                             ]),
                             get_token(T.Whitespace, ' '),
-                            TokenGroup(ttype=ST.ThenExpression, token_list=[
-                                get_token(T.Keyword, 'THEN'),
+                            TokenGroup(ttype=ST.WhenExpression, token_list=[
+                                get_token(T.Keyword, 'WHEN'),
                                 get_token(T.Whitespace, ' '),
-                                get_token(T.Number.Integer, '500'),
-                            ]),
-                        ]),
-                        get_token(T.Whitespace, ' '),
-                        TokenGroup(ttype=ST.WhenExpression, token_list=[
-                            get_token(T.Keyword, 'WHEN'),
-                            get_token(T.Whitespace, ' '),
-                            TokenGroup(ttype=ST.Comparison, token_list=[
-                                TokenGroup(ttype=ST.Identifier, token_list=[
-                                    get_token(T.Name, 'col2'),
+                                TokenGroup(ttype=ST.Comparison, token_list=[
+                                    TokenGroup(ttype=ST.Identifier, token_list=[
+                                        get_token(T.Name, 'col2'),
+                                    ]),
+                                    get_token(T.Whitespace, ' '),
+                                    get_token(ST.ComparisonOperator, '>'),
+                                    get_token(T.Whitespace, ' '),
+                                    get_token(T.Number.Integer, '200'),
                                 ]),
                                 get_token(T.Whitespace, ' '),
-                                get_token(ST.ComparisonOperator, '>'),
-                                get_token(T.Whitespace, ' '),
-                                get_token(T.Number.Integer, '200'),
+                                TokenGroup(ttype=ST.ThenExpression, token_list=[
+                                    get_token(T.Keyword, 'THEN'),
+                                    get_token(T.Whitespace, ' '),
+                                    TokenGroup(ttype=ST.CaseExpression, token_list=[
+                                        get_token(T.Keyword, 'CASE'),
+                                        get_token(T.Whitespace, ' '),
+                                        TokenGroup(ttype=ST.WhenExpression, token_list=[
+                                            get_token(T.Keyword, 'WHEN'),
+                                            get_token(T.Whitespace, ' '),
+                                            TokenGroup(ttype=ST.Comparison, token_list=[
+                                                TokenGroup(ttype=ST.Identifier, token_list=[
+                                                    get_token(T.Name, 'col2'),
+                                                ]),
+                                                get_token(T.Whitespace, ' '),
+                                                get_token(
+                                                    ST.ComparisonOperator, '>'),
+                                                get_token(T.Whitespace, ' '),
+                                                get_token(
+                                                    T.Number.Integer, '400'),
+                                            ]),
+                                            get_token(T.Whitespace, ' '),
+                                            TokenGroup(ttype=ST.ThenExpression, token_list=[
+                                                get_token(T.Keyword, 'THEN'),
+                                                get_token(T.Whitespace, ' '),
+                                                get_token(
+                                                    T.Number.Integer, '400'),
+                                            ]),
+                                        ]),
+                                        get_token(T.Whitespace, ' '),
+                                        TokenGroup(ttype=ST.ElseExpression, token_list=[
+                                            get_token(T.Keyword, 'ELSE'),
+                                            get_token(T.Whitespace, ' '),
+                                            get_token(T.Number.Integer, '200'),
+                                        ]),
+                                        get_token(T.Whitespace, ' '),
+                                        get_token(T.Keyword, 'END'),
+                                    ]),
+                                ]),
                             ]),
                             get_token(T.Whitespace, ' '),
-                            TokenGroup(ttype=ST.ThenExpression, token_list=[
-                                get_token(T.Keyword, 'THEN'),
+                            TokenGroup(ttype=ST.ElseExpression, token_list=[
+                                get_token(T.Keyword, 'ELSE'),
                                 get_token(T.Whitespace, ' '),
-                                get_token(T.Number.Integer, '200'),
+                                get_token(T.Number.Integer, '0'),
                             ]),
-                        ]),
-                        get_token(T.Whitespace, ' '),
-                        TokenGroup(ttype=ST.ElseExpression, token_list=[
-                            get_token(T.Keyword, 'ELSE'),
                             get_token(T.Whitespace, ' '),
-                            get_token(T.Number.Integer, '0'),
+                            get_token(T.Keyword, 'END'),
                         ]),
-                        get_token(T.Whitespace, ' '),
-                        get_token(T.Keyword, 'END'),
                         get_token(T.Whitespace, ' '),
                         get_token(T.Keyword, 'AS'),
                         get_token(T.Whitespace, ' '),
