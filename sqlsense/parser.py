@@ -104,15 +104,11 @@ class SqlParser(object):
     def _process_from_clause(self, stmt, token_group, token):
         from_clause_grp = TokenGroup([token, ], ST.FromClause)
 
-        if token_group.ttype not in (ST.SelectClause, ST.SelectIntoClause, ST.UpdateSetClause):
+        while token_group.ttype not in (ST.SelectClause, ST.SelectIntoClause, ST.UpdateSetClause):
             # TODO: Think about Delete From Clause before getting out
-            while True:
-                # Get out of the Token Group until you find preceeding
-                # (Select Clause, Select Into Clause, Update Set Clause)
-                token_group = self._switch_to_parent(token_group)
-                if token_group.ttype in (ST.SelectClause, ST.SelectIntoClause, ST.UpdateSetClause):
-                    # preceeding (Select Clause, Select Into Clause, Update Set Clause) found,
-                    break
+            # Get out of the Token Group until you find preceeding
+            # (Select Clause, Select Into Clause, Update Set Clause)
+            token_group = self._switch_to_parent(token_group)
 
         # Get out of the Clause Token Group and exit
         token_group = self._switch_to_parent(token_group)
@@ -123,13 +119,9 @@ class SqlParser(object):
     def _process_where_clause(self, stmt, token_group, token):
         where_clause_grp = TokenGroup([token, ], ST.WhereClause)
 
-        if token_group.ttype not in (ST.FromClause, ):
-            while True:
-                # Get out of the Token Group until you find preceeding From Clause
-                token_group = self._switch_to_parent(token_group)
-                if token_group.ttype == ST.FromClause:
-                    # preceeding From Clause found, exit
-                    break
+        while token_group.ttype not in (ST.FromClause, ):
+            # Get out of the Token Group until you find preceeding From Clause
+            token_group = self._switch_to_parent(token_group)
 
         # Get out of the Clause Token Group and exit
         token_group = self._switch_to_parent(token_group)
@@ -139,13 +131,9 @@ class SqlParser(object):
     def _process_group_by_clause(self, stmt, token_group, token):
         group_by_clause_grp = TokenGroup([token, ], ST.GroupByClause)
 
-        if token_group.ttype not in (ST.FromClause, ST.WhereClause):
-            while True:
-                # Get out of the Token Group until you find preceeding From / Where Clause
-                token_group = self._switch_to_parent(token_group)
-                if token_group.ttype in (ST.FromClause, ST.WhereClause):
-                    # preceeding From / Where Clause found, exit
-                    break
+        while token_group.ttype not in (ST.FromClause, ST.WhereClause):
+            # Get out of the Token Group until you find preceeding From / Where Clause
+            token_group = self._switch_to_parent(token_group)
 
         # Get out of the Clause Token Group and exit
         token_group = self._switch_to_parent(token_group)
@@ -155,14 +143,10 @@ class SqlParser(object):
     def _process_having_clause(self, stmt, token_group, token):
         having_clause_grp = TokenGroup([token, ], ST.HavingClause)
 
-        if token_group.ttype not in (ST.FromClause, ST.WhereClause, ST.GroupByClause):
+        while token_group.ttype not in (ST.FromClause, ST.WhereClause, ST.GroupByClause):
             # NOTE: Having Clause need not require Group By Clause before it
-            while True:
-                # Get out of the Token Group until you find preceeding From / Where / Group By Clause
-                token_group = self._switch_to_parent(token_group)
-                if token_group.ttype in (ST.FromClause, ST.WhereClause, ST.GroupByClause):
-                    # preceeding From / Where / Group By Clause found, exit
-                    break
+            # Get out of the Token Group until you find preceeding From / Where / Group By Clause
+            token_group = self._switch_to_parent(token_group)
 
         # Get out of the Clause Token Group and exit
         token_group = self._switch_to_parent(token_group)
@@ -172,13 +156,9 @@ class SqlParser(object):
     def _process_order_by_clause(self, stmt, token_group, token):
         order_by_clause_grp = TokenGroup([token, ], ST.OrderByClause)
 
-        if token_group.ttype not in (ST.WhereClause, ST.GroupByClause, ST.HavingClause):
-            while True:
-                # Get out of the Token Group until you find preceeding Where / Group By / Having Clause
-                token_group = self._switch_to_parent(token_group)
-                if token_group.ttype in (ST.WhereClause, ST.GroupByClause, ST.HavingClause):
-                    # preceeding Where / Group By / Having Clause found, exit
-                    break
+        while token_group.ttype not in (ST.WhereClause, ST.GroupByClause, ST.HavingClause):
+            # Get out of the Token Group until you find preceeding Where / Group By / Having Clause
+            token_group = self._switch_to_parent(token_group)
 
         # Get out of the Clause Token Group and exit
         token_group = self._switch_to_parent(token_group)
