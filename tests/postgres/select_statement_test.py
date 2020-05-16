@@ -1553,7 +1553,7 @@ class SelectStatementTest(unittest.TestCase):
         sql_text = '''
         select case col1 
                 when 0 then 'ZERO'
-                when 1 then 'ONE'
+                when 1, 2 then 'ONE_OR_TWO'
                 else 'MANY'
                end num_to_text,
                case when col2 > 500 then 500
@@ -1591,11 +1591,14 @@ class SelectStatementTest(unittest.TestCase):
                             get_token(T.Keyword, 'WHEN'),
                             get_token(T.Whitespace, ' '),
                             get_token(T.Number.Integer, '1'),
+                            get_token(T.Punctuation, ','),
+                            get_token(T.Whitespace, ' '),
+                            get_token(T.Number.Integer, '2'),
                             get_token(T.Whitespace, ' '),
                             TokenGroup(ttype=ST.ThenExpression, token_list=[
                                 get_token(T.Keyword, 'THEN'),
                                 get_token(T.Whitespace, ' '),
-                                get_token(T.String, "'ONE'"),
+                                get_token(T.String, "'ONE_OR_TWO'"),
                             ]),
                         ]),
                         get_token(T.Whitespace, ' '),
