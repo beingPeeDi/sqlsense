@@ -4,6 +4,7 @@ about: Let us know which SQL construct is missing.
 title: ""
 labels: missing
 assignees: beingPeeDi
+projects: SQL Sense
 
 ---
 

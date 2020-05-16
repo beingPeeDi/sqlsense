@@ -4,12 +4,23 @@
   - SELECT Statements with Basic Constructs
     - SELECT Clause
     - FROM Clause
-    - JOIN Clause
+    - JOIN Clause (INNER, LEFT, RIGHT, FULL, OUTER, CROSS)
       - JOIN ON Clause
     - WHERE Clause
     - GROUP BY Clause
     - HAVING Clause
     - ORDER BY Clause
+  - Conditions
+    - Comparison ('=', '!=', '<>', '<', '<=', '>', '>=')
+    - IN (NOT IN)
+    - LIKE (NOT LIKE)
+    - BETWEEN (NOT BETWEEN)
+    - IS
+  - Logical Operator
+    - AND
+    - OR
+    - NOT
+  - DISTINCT
   - LIMIT Clause (for Postgres)
   - Identifier Types
     - Identifier (for table, columns)
