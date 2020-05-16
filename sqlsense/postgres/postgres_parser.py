@@ -106,7 +106,8 @@ class PostgresParser(SqlParser):
                     stmt, token_group, token)
         elif token.value() in ('=', '!=', '<>', '<', '<=', '>', '>='):
             token.ttype = ST.ComparisonOperator
-            while token_group.ttype not in (ST.RoundBracket, ST.ConditionGroup, ST.JoinOnClause, ST.WhereClause, ST.HavingClause, ST.Not, ST.CaseExpression, ST.WhenExpression):
+            while token_group.ttype not in (ST.RoundBracket, ST.ConditionGroup, ST.JoinOnClause, ST.WhereClause, ST.HavingClause, ST.Not,
+                                            ST.CaseExpression, ST.WhenExpression, ST.ThenExpression, ST.ElseExpression):
                 # Get out of the Token Group until you find the matching Condition Clause
                 token_group = self._switch_to_parent(token_group)
             if token_group.ttype in (ST.RoundBracket):

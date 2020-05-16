@@ -1560,7 +1560,8 @@ class SelectStatementTest(unittest.TestCase):
                     when col2 > 200 then 200
                     else 0
                end as credit
-        from sometable;
+        from sometable
+        where case when x <> 0 then y/x > 1.5 else false end;
         '''
         exp_stmt = [
             PostgresSqlStatement(ttype=ST.Select, token_list=[
@@ -1677,6 +1678,57 @@ class SelectStatementTest(unittest.TestCase):
                     ]),
                 ]),
 
+                get_token(T.Whitespace, ' '),
+
+                TokenGroup(ttype=ST.WhereClause, token_list=[
+                    get_token(T.Keyword, 'WHERE'),
+                    get_token(T.Whitespace, ' '),
+                    TokenGroup(ttype=ST.CaseExpression, token_list=[
+                        get_token(T.Keyword, 'CASE'),
+                        get_token(T.Whitespace, ' '),
+                        TokenGroup(ttype=ST.WhenExpression, token_list=[
+                            get_token(T.Keyword, 'WHEN'),
+                            get_token(T.Whitespace, ' '),
+                            TokenGroup(ttype=ST.Comparison, token_list=[
+                                TokenGroup(ttype=ST.Identifier, token_list=[
+                                    get_token(T.Name, 'x'),
+                                ]),
+                                get_token(T.Whitespace, ' '),
+                                get_token(ST.ComparisonOperator, '<>'),
+                                get_token(T.Whitespace, ' '),
+                                get_token(T.Number.Integer, '0'),
+                            ]),
+                            get_token(T.Whitespace, ' '),
+                            TokenGroup(ttype=ST.ThenExpression, token_list=[
+                                get_token(T.Keyword, 'THEN'),
+                                get_token(T.Whitespace, ' '),
+                                TokenGroup(ttype=ST.Comparison, token_list=[
+                                    TokenGroup(ttype=ST.ComputedIdentifier, token_list=[
+                                        TokenGroup(ttype=ST.Identifier, token_list=[
+                                            get_token(T.Name, 'y'),
+                                        ]),
+                                        get_token(T.Operator, '/'),
+                                        TokenGroup(ttype=ST.Identifier, token_list=[
+                                            get_token(T.Name, 'x'),
+                                        ]),
+                                    ]),
+                                    get_token(T.Whitespace, ' '),
+                                    get_token(ST.ComparisonOperator, '>'),
+                                    get_token(T.Whitespace, ' '),
+                                    get_token(T.Number.Float, '1.5'),
+                                ]),
+                            ]),
+                        ]),
+                        get_token(T.Whitespace, ' '),
+                        TokenGroup(ttype=ST.ElseExpression, token_list=[
+                            get_token(T.Keyword, 'ELSE'),
+                            get_token(T.Whitespace, ' '),
+                            get_token(T.Keyword, 'FALSE'),
+                        ]),
+                        get_token(T.Whitespace, ' '),
+                        get_token(T.Keyword, 'END'),
+                    ]),
+                ]),
                 get_token(T.Punctuation, ';'),
             ]),
         ]

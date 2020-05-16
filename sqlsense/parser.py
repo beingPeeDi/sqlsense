@@ -73,7 +73,8 @@ class SqlParser(object):
         if token.value() in ('+', '-', '*', '/', '%', '^'):
             if token_group.ttype == ST.SelectConstantIdentifier:
                 token_group.ttype = ST.ComputedIdentifier
-            while token_group.ttype not in (ST.ComputedIdentifier, ST.SelectClause, ST.JoinOnClause, ST.WhereClause, ST.HavingClause, ST.RoundBracket, ST.ConditionGroup):
+            while token_group.ttype not in (ST.ComputedIdentifier, ST.SelectClause, ST.JoinOnClause, ST.WhereClause, ST.HavingClause,
+                                            ST.RoundBracket, ST.ConditionGroup, ST.CaseExpression, ST.WhenExpression, ST.ThenExpression, ST.ElseExpression):
                 token_group = self._switch_to_parent(token_group)
             if token_group.ttype != ST.ComputedIdentifier:
                 token_group = token_group.merge_into_token_group(
