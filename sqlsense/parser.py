@@ -73,8 +73,12 @@ class SqlParser(object):
         if token.value() in ('+', '-', '*', '/', '%', '^'):
             if token_group.ttype == ST.SelectConstantIdentifier:
                 token_group.ttype = ST.ComputedIdentifier
-            while token_group.ttype not in (ST.ComputedIdentifier, ST.SelectClause, ST.JoinOnClause, ST.WhereClause, ST.HavingClause,
-                                            ST.RoundBracket, ST.ConditionGroup, ST.CaseExpression, ST.WhenExpression, ST.ThenExpression, ST.ElseExpression):
+            while token_group.ttype not in (ST.ComputedIdentifier, ST.SelectClause, ST.JoinOnClause,
+                                            ST.WhereClause, ST.GroupByClause, ST.HavingClause, ST.OrderByClause,
+                                            ST.RoundBracket, ST.ConditionGroup, ST.CollectionSet,
+                                            ST.Comparison, ST.Between, ST.Like,
+                                            ST.Not, ST.NotBetween, ST.NotLike,
+                                            ST.CaseExpression, ST.WhenExpression, ST.ThenExpression, ST.ElseExpression):
                 token_group = self._switch_to_parent(token_group)
             if token_group.ttype != ST.ComputedIdentifier:
                 token_group = token_group.merge_into_token_group(
@@ -156,7 +160,7 @@ class SqlParser(object):
     def _process_order_by_clause(self, stmt, token_group, token):
         order_by_clause_grp = TokenGroup([token, ], ST.OrderByClause)
 
-        while token_group.ttype not in (ST.WhereClause, ST.GroupByClause, ST.HavingClause):
+        while token_group.ttype not in (ST.FromClause, ST.WhereClause, ST.GroupByClause, ST.HavingClause):
             # Get out of the Token Group until you find preceeding Where / Group By / Having Clause
             token_group = self._switch_to_parent(token_group)
 
@@ -182,37 +186,33 @@ class SqlParser(object):
 
     def _process_and(self, stmt, token_group, token):
         token.ttype = ST.LogicalOperator
-        if token_group.ttype not in (ST.JoinOnClause, ST.WhereClause, ST.HavingClause, ST.Between, ST.NotBetween):
-            while True:
-                # Get out of the Token Group until you find preceeding Join On, Where, Having Clause
-                token_group = self._switch_to_parent(token_group)
-                if token_group.ttype in (ST.JoinOnClause, ST.WhereClause, ST.HavingClause, ST.Between, ST.NotBetween):
-                    # preceeding From Clause found, exit
-                    break
-        elif token_group.ttype in (ST.Between, ST.NotBetween) and token_group.has_token_as_immediate_child(token):
+        while token_group.ttype not in (ST.JoinOnClause, ST.WhereClause, ST.HavingClause,
+                                        ST.ConditionGroup, ST.Between, ST.NotBetween,
+                                        ST.CaseExpression, ST.WhenExpression, ST.ThenExpression, ST.ElseExpression):
+            # Get out of the Token Group until you find preceeding Join On, Where, Having Clause
+            token_group = self._switch_to_parent(token_group)
+        if token_group.ttype in (ST.Between, ST.NotBetween) and token_group.has_token_as_immediate_child(token):
             # Between Clause should not have more than one AND Operator
-            while True:
-                # Get out of the Token Group until you find preceeding Where, Having Clause
-                token_group = self._switch_to_parent(token_group)
-                if token_group.ttype in (ST.WhereClause, ST.HavingClause):
-                    # preceeding From Clause found, exit
-                    break
-        elif token_group.last_token().ttype == T.Keyword:
-            # AND keyword cannot follow another keyword
-            raise Exception
+            # Get out of the Token Group until you find preceeding Where, Having Clause
+            token_group = self._switch_to_parent(token_group)
+            return self._process_and(stmt, token_group, token)
         token_group.append(token)
         return token_group
 
     def _process_or(self, stmt, token_group, token):
         token.ttype = ST.LogicalOperator
-        while token_group.ttype not in (ST.JoinOnClause, ST.WhereClause, ST.HavingClause):
+        while token_group.ttype not in (ST.JoinOnClause, ST.WhereClause, ST.HavingClause,
+                                        ST.ConditionGroup, ST.Between, ST.NotBetween,
+                                        ST.CaseExpression, ST.WhenExpression, ST.ThenExpression, ST.ElseExpression):
             # Get out of the Token Group until you find preceeding Join On, Where, Having Clause
             token_group = self._switch_to_parent(token_group)
         token_group.append(token)
         return token_group
 
     def _process_in(self, stmt, token_group, token):
-        while token_group.ttype not in (ST.Condition, ST.RoundBracket, ST.ConditionGroup, ST.JoinOnClause, ST.WhereClause, ST.HavingClause, ST.Not, ST.WhenExpression):
+        while token_group.ttype not in (ST.JoinOnClause, ST.WhereClause, ST.HavingClause,
+                                        ST.Condition, ST.RoundBracket, ST.ConditionGroup, ST.Not,
+                                        ST.CaseExpression, ST.WhenExpression, ST.ThenExpression, ST.ElseExpression):
             # Get out of the Token Group until you find Condition Clause
             token_group = self._switch_to_parent(token_group)
         if token_group.ttype == ST.RoundBracket:
@@ -268,7 +268,9 @@ class SqlParser(object):
         # TODO: NOT can be in SELECT Clause as well
         # TODO: IS Condition
         token.ttype = ST.LogicalOperator
-        while token_group.ttype not in (ST.RoundBracket, ST.ConditionGroup, ST.WhereClause, ST.JoinOnClause, ST.HavingClause, ST.Comparison):
+        while token_group.ttype not in (ST.JoinOnClause, ST.WhereClause, ST.HavingClause,
+                                        ST.ConditionGroup, ST.RoundBracket, ST.Comparison,
+                                        ST.CaseExpression, ST.WhenExpression, ST.ThenExpression, ST.ElseExpression):
             # Get out of the Token Group until you find Where, JoinOn, Having Clause or ConditionGroup
             token_group = self._switch_to_parent(token_group)
         if token_group.ttype == ST.RoundBracket:
@@ -297,7 +299,9 @@ class SqlParser(object):
 
     def _process_case(self, stmt, token_group, token):
         case_exp_grp = TokenGroup([token, ], ST.CaseExpression)
-        while token_group.ttype not in (ST.Condition, ST.RoundBracket, ST.ConditionGroup, ST.SelectClause, ST.JoinOnClause, ST.WhereClause, ST.HavingClause, ST.Not):
+        while token_group.ttype not in (ST.SelectClause, ST.JoinOnClause, ST.WhereClause, ST.HavingClause,
+                                        ST.ConditionGroup, ST.Condition, ST.RoundBracket, ST.Not,
+                                        ST.CaseExpression, ST.WhenExpression, ST.ThenExpression, ST.ElseExpression):
             # TODO: Might need to consider ComputedIdentifier Case
             # Get out of the Token Group until you find appropriate Clause
             token_group = self._switch_to_parent(token_group)
