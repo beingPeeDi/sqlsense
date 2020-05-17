@@ -12,7 +12,7 @@ class SqlParser(object):
 
     def __init__(self, lexer_object=SqlLexer, end_marker_token=Token(T.Punctuation, ';')):
         self._lexer = lexer_object(stripall=True)
-        self._lexer.add_filter('keywordcase', case='upper')
+        # self._lexer.add_filter('keywordcase', case='upper')
         self._lexer.add_filter(text_to_whitespace_token())
         self._end_marker_token = end_marker_token
         self._parse_rules = self._set_rules_()
@@ -44,7 +44,7 @@ class SqlParser(object):
                 continue
             rule_key = str(tk.ttype)
             if tk.ttype == T.Keyword:
-                rule_key = 'Token.Keyword.{0}'.format(tk.value())
+                rule_key = 'Token.Keyword.{0}'.format(tk.value().upper())
             elif tk.ttype in T.Number:
                 rule_key = 'Token.Literal.Number'
             elif tk.ttype in T.String:

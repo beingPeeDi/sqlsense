@@ -42,9 +42,9 @@ class SelectStatementTest(unittest.TestCase):
         sql_text = '''
         --- some comment
 
-        select upper(a.c) as c,   p.*
-        from abc.a_table as a join long_table_name p
-        on a.z = p.z;
+        SELECT upper(a.c) AS c,   p.*
+        FROM abc.a_table AS a JOIN long_table_name p
+        ON a.z = p.z;
         '''
         exp_stmt = [
             PostgresSqlStatement(ttype=ST.Select, token_list=[
@@ -141,9 +141,9 @@ class SelectStatementTest(unittest.TestCase):
         sql_text = '''
         --- some comment
 
-        select upper(abc.c)   c,       xyz.*
-        from abc join (select * from subtable) xyz
-        on abc.z = xyz.z;
+        SELECT upper(abc.c)   c,       xyz.*
+        FROM abc JOIN (SELECT * FROM subtable) xyz
+        ON abc.z = xyz.z;
         '''
         exp_stmt = [
             PostgresSqlStatement(ttype=ST.Select, token_list=[
@@ -244,11 +244,11 @@ class SelectStatementTest(unittest.TestCase):
     def test_003_where_in_condt(self):
         p = PostgresParser()
         sql_text = '''
-        select add_nums(abc.c, 5) as c,       xyz.*
-        from abc join (select * from subtable) as xyz
-        on abc.z = xyz.z -- comments in between
-        where xyz.x >= 20.5
-        and abc.p in (select j from where_in_table);
+        SELECT add_nums(abc.c, 5) AS c,       xyz.*
+        FROM abc JOIN (SELECT * FROM subtable) AS xyz
+        ON abc.z = xyz.z -- comments in between
+        WHERE xyz.x >= 20.5
+        AND abc.p IN (SELECT j FROM where_in_table);
         '''
         exp_stmt = [
             PostgresSqlStatement(ttype=ST.Select, token_list=[
@@ -406,13 +406,13 @@ class SelectStatementTest(unittest.TestCase):
     def test_004_not_null_condt_and_group_by(self):
         p = PostgresParser()
         sql_text = '''
-        select upper(abc.c) as c,
+        SELECT upper(abc.c) AS c,
                count(xyz.*) total_count
-        from abc join (select * from subtable where some_col is not null) xyz
-        on abc.z = xyz.z -- comments in between
-        where xyz.x >= 20.5
-        and abc.p in (select j from where_in_table)
-        group by abc.c;
+        FROM abc JOIN (SELECT * FROM subtable WHERE some_col IS NOT NULL) xyz
+        ON abc.z = xyz.z -- comments in between
+        WHERE xyz.x >= 20.5
+        AND abc.p IN (SELECT j FROM where_in_table)
+        GROUP BY abc.c;
         '''
         exp_stmt = [
             PostgresSqlStatement(ttype=ST.Select, token_list=[
@@ -606,14 +606,14 @@ class SelectStatementTest(unittest.TestCase):
     def test_005_group_by_and_having_and_order_by(self):
         p = PostgresParser()
         sql_text = '''
-        select abc.c,
+        SELECT abc.c,
                count(xyz.*) total_count
-        from abc join xyz
-        on abc.z = xyz.z -- comments in between
-        where xyz.x >= 20.5
-        group by abc.c
-        having count(xyz.*) > 500
-        order by abc.c;
+        FROM abc JOIN xyz
+        ON abc.z = xyz.z -- comments in between
+        WHERE xyz.x >= 20.5
+        GROUP BY abc.c
+        HAVING count(xyz.*) > 500
+        ORDER BY abc.c;
         '''
         exp_stmt = [
             PostgresSqlStatement(ttype=ST.Select, token_list=[
@@ -769,10 +769,10 @@ class SelectStatementTest(unittest.TestCase):
     def test_006_between_and_like(self):
         p = PostgresParser()
         sql_text = '''
-            select a, b
-            from abc
-            where b between 10 and 20
-            and a like "%PeeDi_";
+            SELECT a, b
+            FROM abc
+            WHERE b BETWEEN 10 AND 20
+            AND a LIKE "%PeeDi_";
             '''
         exp_stmt = [
             PostgresSqlStatement(ttype=ST.Select, token_list=[
@@ -847,11 +847,11 @@ class SelectStatementTest(unittest.TestCase):
     def test_007_in_collection(self):
         p = PostgresParser()
         sql_text = '''
-            select a, b, c
-            from abc
-            where c in (select q from qset)
-            and b in (10, 20, 30, 40)
-            and a in ("tap", "map");
+            SELECT a, b, c
+            FROM abc
+            WHERE c IN (SELECT q FROM qset)
+            AND b IN (10, 20, 30, 40)
+            AND a IN ("tap", "map");
             '''
         exp_stmt = [
             PostgresSqlStatement(ttype=ST.Select, token_list=[
@@ -977,10 +977,10 @@ class SelectStatementTest(unittest.TestCase):
     def test_008_distinct_and_select_into_and_limit(self):
         p = PostgresParser()
         sql_text = '''
-            select distinct a, b, c
-            into xyz
-            from abc
-            limit 100;
+            SELECT DISTINCT a, b, c
+            INTO xyz
+            FROM abc
+            LIMIT 100;
             '''
         exp_stmt = [
             PostgresSqlStatement(ttype=ST.SelectInto, token_list=[
@@ -1048,17 +1048,17 @@ class SelectStatementTest(unittest.TestCase):
     def test_009_not_condition(self):
         p = PostgresParser()
         sql_text = '''
-        select abc.c,
+        SELECT abc.c,
                count(xyz.*) total_count,
                sum(abc.d) some_sum
-        from abc join xyz
-        on abc.z = xyz.z or xyz.a not in (abc.c,abc.d)
-        where xyz.x >= 20.5
-        or xyz.y not like '%NOT_LIKE%'
-        group by abc.c
-        having count(xyz.*) > 500
-        or sum(abc.d) not between 2000 and 50000
-        order by abc.c;
+        FROM abc JOIN xyz
+        ON abc.z = xyz.z OR xyz.a NOT IN (abc.c,abc.d)
+        WHERE xyz.x >= 20.5
+        OR xyz.y NOT LIKE '%NOT_LIKE%'
+        GROUP BY abc.c
+        HAVING count(xyz.*) > 500
+        OR sum(abc.d) NOT BETWEEN 2000 AND 50000
+        ORDER BY abc.c;
         '''
         exp_stmt = [
             PostgresSqlStatement(ttype=ST.Select, token_list=[
@@ -1300,19 +1300,19 @@ class SelectStatementTest(unittest.TestCase):
     def test_010_expression(self):
         p = PostgresParser()
         sql_text = '''
-        select 10 + abc.x computed_field_1,
-            abc.c*xyz.d+unambiguous_column-1 as computed_field_2,
-            (unambiguous_column-1) as computed_field_3,
+        SELECT 10 + abc.x computed_field_1,
+            abc.c*xyz.d+unambiguous_column-1 AS computed_field_2,
+            (unambiguous_column-1) AS computed_field_3,
             (2*(1-2)) computed_field_4,
             100 % 4 computed_field_5,
-            2 as constant_value ,
+            2 AS constant_value ,
             3,
             (9),
             (abc.p % 100),
             4 other_constant_value
-        from abc join xyz
-        on abc.z = xyz.z
-        where ((abc.m - 10)*500>10000) and 2>1;
+        FROM abc JOIN xyz
+        ON abc.z = xyz.z
+        WHERE ((abc.m - 10)*500>10000) AND 2>1;
         '''
         exp_stmt = [
             PostgresSqlStatement(ttype=ST.Select, token_list=[
@@ -1561,19 +1561,19 @@ class SelectStatementTest(unittest.TestCase):
     def test_011_case(self):
         p = PostgresParser()
         sql_text = '''
-        select case col1 
-                when 0 then 'ZERO'
-                when 1, 2 then 'ONE_OR_TWO'
-                else 'MANY'
-               end num_to_text,
-               case when col2 > 500 then 500
-                    when col2 > 200 then case when col2 > 400 then 400 
-                                              else 200 
-                                         end
-                    else 0
-               end as credit
-        from sometable
-        where case when x <> 0 then y/x > 1.5 else false end;
+        SELECT CASE col1 
+                WHEN 0 THEN 'ZERO'
+                WHEN 1, 2 THEN 'ONE_OR_TWO'
+                ELSE 'MANY'
+               END num_to_text,
+               CASE WHEN col2 > 500 THEN 500
+                    WHEN col2 > 200 THEN CASE WHEN col2 > 400 THEN 400 
+                                              ELSE 200 
+                                         END
+                    ELSE 0
+               END AS credit
+        FROM sometable
+        WHERE CASE WHEN x <> 0 THEN y/x > 1.5 ELSE FALSE END;
         '''
         exp_stmt = [
             PostgresSqlStatement(ttype=ST.Select, token_list=[
@@ -1781,6 +1781,53 @@ class SelectStatementTest(unittest.TestCase):
                         get_token(T.Keyword, 'END'),
                     ]),
                 ]),
+                get_token(T.Punctuation, ';'),
+            ]),
+        ]
+        i = 0
+        print('--')
+        print(sql_text)
+        print('--')
+        for x in p.parse(sql_text):
+            _token_list_tracing_helper(x, exp_stmt[i])
+            i += 1
+        assert i == len(exp_stmt)
+        print('')
+
+    def test_012_non_reserved_keywords(self):
+        # NAME is a non-reserved keyword
+        p = PostgresParser()
+        sql_text = '''
+            SELECT name, elevation
+            FROM ONLY cities;
+        '''
+        exp_stmt = [
+            PostgresSqlStatement(ttype=ST.Select, token_list=[
+                TokenGroup(ttype=ST.SelectClause, token_list=[
+                    get_token(T.Keyword, 'SELECT'),
+                    get_token(T.Whitespace, ' '),
+                    TokenGroup(ttype=ST.Identifier, token_list=[
+                        get_token(T.Name, 'name'),
+                    ]),
+                    get_token(T.Punctuation, ','),
+                    get_token(T.Whitespace, ' '),
+                    TokenGroup(ttype=ST.Identifier, token_list=[
+                        get_token(T.Name, 'elevation'),
+                    ]),
+                ]),
+
+                get_token(T.Whitespace, ' '),
+
+                TokenGroup(ttype=ST.FromClause, token_list=[
+                    get_token(T.Keyword, 'FROM'),
+                    get_token(T.Whitespace, ' '),
+                    get_token(T.Keyword, 'ONLY'),
+                    get_token(T.Whitespace, ' '),
+                    TokenGroup(ttype=ST.Identifier, token_list=[
+                        get_token(T.Name, 'cities'),
+                    ]),
+                ]),
+
                 get_token(T.Punctuation, ';'),
             ]),
         ]

@@ -127,6 +127,10 @@ class PostgresParser(SqlParser):
         token_group.append(limit_clause_grp)
         return limit_clause_grp
 
+    def _process_keyword_name(self, stmt, token_group, token):
+        token.ttype = T.Name
+        return self._process_name(stmt, token_group, token)
+
     def _set_rules_(self):
         ''' You may extend this function in Child classes
         '''
@@ -135,4 +139,5 @@ class PostgresParser(SqlParser):
         rules_dict['Token.Punctuation'] = self._process_punctuation
         rules_dict['Token.Operator'] = self._process_operator
         rules_dict['Token.Keyword.LIMIT'] = self._process_limit
+        rules_dict['Token.Keyword.NAME'] = self._process_keyword_name
         return rules_dict
