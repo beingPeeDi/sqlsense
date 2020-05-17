@@ -29,6 +29,6 @@
     - Function
     - Sub Query
   - CASE Conditional Expression Constructs
-    - Is listed as Identifier when used in SELECT Clause
+    - Is listed as ComputedIdentifier when used in SELECT Clause
 - Metadata Extraction
   - Extract Datasets, Datafields used in PostgresSQL statement.
