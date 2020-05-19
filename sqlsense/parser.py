@@ -51,9 +51,9 @@ class SqlParser(object):
                 rule_key = 'Token.Literal.String'
             else:
                 rule_key = str(tk.ttype)
-            (action, occurs_in) = self._parse_rules[rule_key] if rule_key in self._parse_rules else (None, None)
+            (action, tokengrp_set) = self._parse_rules[rule_key] if rule_key in self._parse_rules else (None, None)
             if action:
-                curr_tk_grp = action(stmt, curr_tk_grp, tk, occurs_in)
+                curr_tk_grp = action(stmt, curr_tk_grp, tk, tokengrp_set)
             else:
                 curr_tk_grp.append(tk)
 
@@ -86,7 +86,7 @@ class SqlParser(object):
         token_group.append(token)
         return token_group
 
-    def _process_select_clause(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_select_clause(self, stmt, token_group, token, tokengroup_set):
         select_clause_grp = TokenGroup([token, ], ST.SelectClause)
         if token_group.ttype is not None and token_group.ttype not in (ST.InsertIntoClause, ST.RoundBracket, ST.CollectionSet):
             # If Select Clause is preceeded by Insert Into Clause, get out of that Clause Token Group
@@ -105,7 +105,7 @@ class SqlParser(object):
             token_group.ttype = ST.SubQuery
         return select_clause_grp
 
-    def _process_from_clause(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_from_clause(self, stmt, token_group, token, tokengroup_set):
         from_clause_grp = TokenGroup([token, ], ST.FromClause)
 
         while token_group.ttype not in (ST.SelectClause, ST.SelectIntoClause, ST.UpdateSetClause):
@@ -120,7 +120,7 @@ class SqlParser(object):
         # TODO: Think about Delete From Clause before returning
         return from_clause_grp
 
-    def _process_where_clause(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_where_clause(self, stmt, token_group, token, tokengroup_set):
         where_clause_grp = TokenGroup([token, ], ST.WhereClause)
 
         while token_group.ttype not in (ST.FromClause, ):
@@ -132,7 +132,7 @@ class SqlParser(object):
         token_group.append(where_clause_grp)
         return where_clause_grp
 
-    def _process_group_by_clause(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_group_by_clause(self, stmt, token_group, token, tokengroup_set):
         group_by_clause_grp = TokenGroup([token, ], ST.GroupByClause)
 
         while token_group.ttype not in (ST.FromClause, ST.WhereClause):
@@ -144,7 +144,7 @@ class SqlParser(object):
         token_group.append(group_by_clause_grp)
         return group_by_clause_grp
 
-    def _process_having_clause(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_having_clause(self, stmt, token_group, token, tokengroup_set):
         having_clause_grp = TokenGroup([token, ], ST.HavingClause)
 
         while token_group.ttype not in (ST.FromClause, ST.WhereClause, ST.GroupByClause):
@@ -157,7 +157,7 @@ class SqlParser(object):
         token_group.append(having_clause_grp)
         return having_clause_grp
 
-    def _process_order_by_clause(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_order_by_clause(self, stmt, token_group, token, tokengroup_set):
         order_by_clause_grp = TokenGroup([token, ], ST.OrderByClause)
 
         while token_group.ttype not in (ST.FromClause, ST.WhereClause, ST.GroupByClause, ST.HavingClause):
@@ -169,14 +169,14 @@ class SqlParser(object):
         token_group.append(order_by_clause_grp)
         return order_by_clause_grp
 
-    def _process_join(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_join(self, stmt, token_group, token, tokengroup_set):
         while token_group.ttype != ST.FromClause:
             # Get out of the Token Group until you find the matching From Clause
             token_group = self._switch_to_parent(token_group)
         token_group.append(token)
         return token_group
 
-    def _process_on(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_on(self, stmt, token_group, token, tokengroup_set):
         join_on_grp = TokenGroup([token, ], ST.JoinOnClause)
         while token_group.ttype != ST.FromClause:
             # Get out of the Token Group until you find the matching From Clause
@@ -184,7 +184,7 @@ class SqlParser(object):
         token_group.append(join_on_grp)
         return join_on_grp
 
-    def _process_and(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_and(self, stmt, token_group, token, tokengroup_set):
         token.ttype = ST.LogicalOperator
         while token_group.ttype not in (ST.JoinOnClause, ST.WhereClause, ST.HavingClause,
                                         ST.ConditionGroup, ST.Between, ST.NotBetween,
@@ -195,11 +195,11 @@ class SqlParser(object):
             # Between Clause should not have more than one AND Operator
             # Get out of the Token Group until you find preceeding Where, Having Clause
             token_group = self._switch_to_parent(token_group)
-            return self._process_and(stmt, token_group, token, occurs_in_tokengroup)
+            return self._process_and(stmt, token_group, token, tokengroup_set)
         token_group.append(token)
         return token_group
 
-    def _process_or(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_or(self, stmt, token_group, token, tokengroup_set):
         token.ttype = ST.LogicalOperator
         while token_group.ttype not in (ST.JoinOnClause, ST.WhereClause, ST.HavingClause,
                                         ST.ConditionGroup, ST.Between, ST.NotBetween,
@@ -209,7 +209,7 @@ class SqlParser(object):
         token_group.append(token)
         return token_group
 
-    def _process_in(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_in(self, stmt, token_group, token, tokengroup_set):
         while token_group.ttype not in (ST.JoinOnClause, ST.WhereClause, ST.HavingClause,
                                         ST.Condition, ST.RoundBracket, ST.ConditionGroup, ST.Not,
                                         ST.CaseExpression, ST.WhenExpression, ST.ThenExpression, ST.ElseExpression):
@@ -227,25 +227,25 @@ class SqlParser(object):
         token_group.append(token)
         return token_group
 
-    def _process_like(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_like(self, stmt, token_group, token, tokengroup_set):
         # LIKE is same as IN, just that the ttype should be Like/NotLike
-        token_group = self._process_in(stmt, token_group, token, occurs_in_tokengroup)
+        token_group = self._process_in(stmt, token_group, token, tokengroup_set)
         token_group.ttype = ST.Like if token_group.ttype == ST.In else ST.NotLike
         return token_group
 
-    def _process_between(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_between(self, stmt, token_group, token, tokengroup_set):
         # BETWEEN is same as IN, just that the ttype should be Between/NotBetween
-        token_group = self._process_in(stmt, token_group, token, occurs_in_tokengroup)
+        token_group = self._process_in(stmt, token_group, token, tokengroup_set)
         token_group.ttype = ST.Between if token_group.ttype == ST.In else ST.NotBetween
         return token_group
 
-    def _process_is(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_is(self, stmt, token_group, token, tokengroup_set):
         # IS is same as IN, just that the ttype should be Comparison
-        token_group = self._process_in(stmt, token_group, token, occurs_in_tokengroup)
+        token_group = self._process_in(stmt, token_group, token, tokengroup_set)
         token_group.ttype = ST.Comparison
         return token_group
 
-    def _process_into(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_into(self, stmt, token_group, token, tokengroup_set):
         # Assumption: INTO Clause will never be in a Sub-Query
         while token_group.ttype not in (ST.InsertIntoClause, ST.SelectClause):
             # Get out of the Token Group until you find preceeding
@@ -264,7 +264,7 @@ class SqlParser(object):
 
         return token_group
 
-    def _process_not(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_not(self, stmt, token_group, token, tokengroup_set):
         # TODO: NOT can be in SELECT Clause as well
         # TODO: IS Condition
         token.ttype = ST.LogicalOperator
@@ -286,7 +286,7 @@ class SqlParser(object):
             token_group.append(token)
             return token_group
 
-    def _process_as(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_as(self, stmt, token_group, token, tokengroup_set):
         if token_group.ttype == ST.SelectClause:
             # Case: SELECT CASE ... END AS case_alias
             token_group = token_group.merge_into_token_group(
@@ -297,7 +297,7 @@ class SqlParser(object):
         token_group.append(token)
         return token_group
 
-    def _process_case(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_case(self, stmt, token_group, token, tokengroup_set):
         case_exp_grp = TokenGroup([token, ], ST.CaseExpression)
         while token_group.ttype not in (ST.SelectClause, ST.JoinOnClause, ST.WhereClause, ST.HavingClause,
                                         ST.ConditionGroup, ST.Condition, ST.RoundBracket, ST.Not,
@@ -308,7 +308,7 @@ class SqlParser(object):
         token_group.append(case_exp_grp)
         return case_exp_grp
 
-    def _process_when(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_when(self, stmt, token_group, token, tokengroup_set):
         when_exp_grp = TokenGroup([token, ], ST.WhenExpression)
         while token_group.ttype not in (ST.CaseExpression):
             # Get out of the Token Group until you find Case Expression
@@ -316,7 +316,7 @@ class SqlParser(object):
         token_group.append(when_exp_grp)
         return when_exp_grp
 
-    def _process_then(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_then(self, stmt, token_group, token, tokengroup_set):
         then_exp_grp = TokenGroup([token, ], ST.ThenExpression)
         while token_group.ttype not in (ST.WhenExpression):
             # Get out of the Token Group until you find When Expression
@@ -324,7 +324,7 @@ class SqlParser(object):
         token_group.append(then_exp_grp)
         return then_exp_grp
 
-    def _process_else(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_else(self, stmt, token_group, token, tokengroup_set):
         else_exp_grp = TokenGroup([token, ], ST.ElseExpression)
         while token_group.ttype not in (ST.CaseExpression):
             # Get out of the Token Group until you find Case Expression
@@ -332,7 +332,7 @@ class SqlParser(object):
         token_group.append(else_exp_grp)
         return else_exp_grp
 
-    def _process_end(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_end(self, stmt, token_group, token, tokengroup_set):
         while token_group.ttype not in (ST.CaseExpression):
             # Get out of the Token Group until you find Case Expression
             token_group = self._switch_to_parent(token_group)
@@ -340,7 +340,7 @@ class SqlParser(object):
         token_group = self._switch_to_parent(token_group)
         return token_group
 
-    def _process_literal_number(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_literal_number(self, stmt, token_group, token, tokengroup_set):
         if token_group.ttype == ST.SelectClause:
             select_constant_identifier_grp = TokenGroup(
                 [token, ], ST.SelectConstantIdentifier)
@@ -350,7 +350,7 @@ class SqlParser(object):
             token_group.append(token)
         return token_group
 
-    def _process_literal_string(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_literal_string(self, stmt, token_group, token, tokengroup_set):
         token.ttype = T.String
         if token_group.ttype == ST.SelectClause:
             select_constant_identifier_grp = TokenGroup(
@@ -364,13 +364,13 @@ class SqlParser(object):
             token_group.append(token)
         return token_group
 
-    def _process_name(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_name(self, stmt, token_group, token, tokengroup_set):
         raise NotImplementedError
 
-    def _process_punctuation(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_punctuation(self, stmt, token_group, token, tokengroup_set):
         raise NotImplementedError
 
-    def _process_operator(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_operator(self, stmt, token_group, token, tokengroup_set):
         raise NotImplementedError
 
     def _set_rules_(self):

@@ -18,7 +18,7 @@ class PostgresParser(SqlParser):
     def _get_sql_statement(self):
         return PostgresSqlStatement()
 
-    def _process_name(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_name(self, stmt, token_group, token, tokengroup_set):
         if token_group.last_token().match_type_value(Token(T.Keyword, 'AS')):
             # Alias follows AS Keyword
             token.ttype = ST.AliasName
@@ -37,7 +37,7 @@ class PostgresParser(SqlParser):
               token_group.ttype == ST.Identifier and token_group.last_token().ttype == T.Name):
             # Case: SELECT A.x+B.y SomeAlias FROM ...
             # here Computed Identifier => A.x+B.y and Identifier => B.y followed by Alias
-            return self._process_name(stmt, self._switch_to_parent(token_group), token, occurs_in_tokengroup)
+            return self._process_name(stmt, self._switch_to_parent(token_group), token, tokengroup_set)
         elif (token_group.ttype == ST.SelectClause and token_group.last_token().ttype not in (T.Keyword, T.Punctuation)):
             # Case: SELECT CASE ... END AS case_alias
             token_group = token_group.merge_into_token_group(
@@ -52,7 +52,7 @@ class PostgresParser(SqlParser):
             token_group = identifier_grp
         return token_group
 
-    def _process_punctuation(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_punctuation(self, stmt, token_group, token, tokengroup_set):
         if token.value() == '(':
             # Open a New Sub Query Token Group
             bracket_grp = TokenGroup([token, ], ST.RoundBracket)
@@ -90,7 +90,7 @@ class PostgresParser(SqlParser):
             token_group.append(token)
         return token_group
 
-    def _process_operator(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_operator(self, stmt, token_group, token, tokengroup_set):
         if token.value() == '*':
             # * can be a Wildcard in Select Clause
             if (token_group.ttype == ST.SelectClause or
@@ -119,7 +119,7 @@ class PostgresParser(SqlParser):
                 stmt, token_group, token)
         return token_group
 
-    def _process_limit(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_limit(self, stmt, token_group, token, tokengroup_set):
         # Assumption: LIMIT will be at SELECT Statement Level
         limit_clause_grp = TokenGroup([token, ], PT.LimitClause)
         while token_group.ttype not in (ST.Select, ST.SelectInto, ST.InsertIntoSelect, ST.SubQuery):
@@ -127,9 +127,9 @@ class PostgresParser(SqlParser):
         token_group.append(limit_clause_grp)
         return limit_clause_grp
 
-    def _process_keyword_name(self, stmt, token_group, token, occurs_in_tokengroup):
+    def _process_keyword_name(self, stmt, token_group, token, tokengroup_set):
         token.ttype = T.Name
-        return self._process_name(stmt, token_group, token, occurs_in_tokengroup)
+        return self._process_name(stmt, token_group, token, tokengroup_set)
 
     def _set_rules_(self):
         ''' You may extend this function in Child classes
