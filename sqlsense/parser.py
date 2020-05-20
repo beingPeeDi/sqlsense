@@ -88,9 +88,15 @@ class SqlParser(object):
 
     def _process_select_clause(self, stmt, token_group, token, tokengroup_set):
         select_clause_grp = TokenGroup([token, ], ST.SelectClause)
-        if token_group.ttype is not None and token_group.ttype not in (ST.InsertIntoClause, ST.RoundBracket, ST.CollectionSet):
-            # If Select Clause is preceeded by Insert Into Clause, get out of that Clause Token Group
-            token_group = self._switch_to_parent(token_group)
+        if token_group.ttype in (ST.RoundBracket, ST.CollectionSet):
+            # TODO: Should we check the preceeding token to make sure SELECT is the first keyword in Brackets
+            token_group.ttype = ST.SubQuery
+        else:
+            while token_group.ttype is not None and token_group.ttype not in tokengroup_set:
+                # If Select Clause is preceeded by Insert Into Clause, get out of that Clause Token Group
+                token_group = self._switch_to_parent(token_group)
+            if token_group.ttype in tokengroup_set:
+                token_group = self._switch_to_parent(token_group)
 
         token_group.append(select_clause_grp)
 
@@ -100,9 +106,6 @@ class SqlParser(object):
                 token_group.ttype = ST.Select
             elif token_group.ttype is ST.Insert:
                 token_group.ttype = ST.InsertIntoSelect
-        elif token_group.ttype in (ST.RoundBracket, ST.CollectionSet):
-            # TODO: Should we check the preceeding token to make sure SELECT is the first keyword in Brackets
-            token_group.ttype = ST.SubQuery
         return select_clause_grp
 
     def _process_from_clause(self, stmt, token_group, token, tokengroup_set):
@@ -292,7 +295,7 @@ class SqlParser(object):
             token_group = token_group.merge_into_token_group(
                 ST.ComputedIdentifier, token_list_start_index_included=token_group.last_token_index())
         else:
-            while token_group.parent.ttype not in (ST.SelectClause, ST.FromClause):
+            while token_group.parent.ttype not in tokengroup_set:
                 token_group = self._switch_to_parent(token_group)
         token_group.append(token)
         return token_group
@@ -383,7 +386,7 @@ class SqlParser(object):
             'Token.Text.Name': (self._process_name, None),
             'Token.Text.Punctuation': (self._process_punctuation, None),
             'Token.Text.Operator': (self._process_operator, None),
-            'Token.Keyword.SELECT': (self._process_select_clause, None),
+            'Token.Keyword.SELECT': (self._process_select_clause, (ST.InsertIntoClause, )),
             'Token.Keyword.DISTINCT': (None, None),
             'Token.Keyword.FROM': (self._process_from_clause, None),
             'Token.Keyword.WHERE': (self._process_where_clause, None),
@@ -405,7 +408,7 @@ class SqlParser(object):
             'Token.Keyword.LIKE': (self._process_like, None),
             'Token.Keyword.BETWEEN': (self._process_between, None),
             'Token.Keyword.IS': (self._process_is, None),
-            'Token.Keyword.AS': (self._process_as, None),
+            'Token.Keyword.AS': (self._process_as, (ST.SelectClause, ST.FromClause)),
             'Token.Keyword.INTO': (self._process_into, None),
             'Token.Keyword.NOT': (self._process_not, None),
             'Token.Keyword.CASE': (self._process_case, None),
