@@ -2118,3 +2118,222 @@ class SelectStatementTest(unittest.TestCase):
             i += 1
         assert i == len(exp_stmt)
         print('')
+
+    def test_014_with_recursive(self):
+        p = PostgresParser()
+        sql_text = '''
+            WITH RECURSIVE included_parts(sub_part, part, quantity) AS (
+                SELECT sub_part, part, quantity FROM parts WHERE part = 'our_product'
+            UNION ALL
+                SELECT p.sub_part, p.part, p.quantity
+                FROM included_parts pr, parts p
+                WHERE p.part = pr.sub_part
+            )
+            SELECT sub_part, SUM(quantity) AS total_quantity
+            FROM included_parts
+            GROUP BY sub_part;
+        '''
+        exp_stmt = [
+            PostgresSqlStatement(ttype=ST.Select, token_list=[
+                TokenGroup(ttype=PT.WithClause, token_list=[
+                    get_token(T.Keyword, 'WITH'),
+                    get_token(T.Whitespace, ' '),
+                    get_token(T.Keyword, 'RECURSIVE'),
+                    get_token(T.Whitespace, ' '),
+                    TokenGroup(ttype=PT.WithIdentifier, token_list=[
+                        TokenGroup(ttype=PT.WithQueryAliasIdentifier, token_list=[
+                            get_token(PT.WithQueryAliasName, 'included_parts'),
+                            TokenGroup(ttype=ST.ArgumentList, token_list=[
+                                get_token(T.Punctuation, '('),
+                                TokenGroup(ttype=ST.Identifier, token_list=[
+                                    get_token(T.Name, 'sub_part'),
+                                ]),
+                                get_token(T.Punctuation, ','),
+                                get_token(T.Whitespace, ' '),
+                                TokenGroup(ttype=ST.Identifier, token_list=[
+                                    get_token(T.Name, 'part'),
+                                ]),
+                                get_token(T.Punctuation, ','),
+                                get_token(T.Whitespace, ' '),
+                                TokenGroup(ttype=ST.Identifier, token_list=[
+                                    get_token(T.Name, 'quantity'),
+                                ]),
+                                get_token(T.Punctuation, ')')
+                            ]),
+                        ]),
+                        get_token(T.Whitespace, ' '),
+                        get_token(T.Keyword, 'AS'),
+                        get_token(T.Whitespace, ' '),
+                        TokenGroup(ttype=ST.SubQuery, token_list=[
+                            get_token(T.Punctuation, '('),
+                            get_token(T.Whitespace, ' '),
+                            TokenGroup(ttype=ST.SelectClause, token_list=[
+                                get_token(T.Keyword, 'SELECT'),
+                                get_token(T.Whitespace, ' '),
+                                TokenGroup(ttype=ST.Identifier, token_list=[
+                                    get_token(T.Name, 'sub_part'),
+                                ]),
+                                get_token(T.Punctuation, ','),
+                                get_token(T.Whitespace, ' '),
+                                TokenGroup(ttype=ST.Identifier, token_list=[
+                                    get_token(T.Name, 'part'),
+                                ]),
+                                get_token(T.Punctuation, ','),
+                                get_token(T.Whitespace, ' '),
+                                TokenGroup(ttype=ST.Identifier, token_list=[
+                                    get_token(T.Name, 'quantity'),
+                                ]),
+                            ]),
+                            get_token(T.Whitespace, ' '),
+                            TokenGroup(ttype=ST.FromClause, token_list=[
+                                get_token(T.Keyword, 'FROM'),
+                                get_token(T.Whitespace, ' '),
+                                TokenGroup(ttype=ST.Identifier, token_list=[
+                                    get_token(T.Name, 'parts'),
+                                ]),
+                            ]),
+                            get_token(T.Whitespace, ' '),
+                            TokenGroup(ttype=ST.WhereClause, token_list=[
+                                get_token(T.Keyword, 'WHERE'),
+                                get_token(T.Whitespace, ' '),
+                                TokenGroup(ttype=ST.Comparison, token_list=[
+                                    TokenGroup(ttype=ST.Identifier, token_list=[
+                                        get_token(T.Name, 'part'),
+                                    ]),
+                                    get_token(T.Whitespace, ' '),
+                                    get_token(ST.ComparisonOperator, '='),
+                                    get_token(T.Whitespace, ' '),
+                                    get_token(T.String, "'our_product'"),
+                                ]),
+                            ]),
+                            get_token(T.Whitespace, ' '),
+                            get_token(T.Keyword, 'UNION'),
+                            get_token(T.Whitespace, ' '),
+                            get_token(T.Keyword, 'ALL'),
+                            get_token(T.Whitespace, ' '),
+                            TokenGroup(ttype=ST.SelectClause, token_list=[
+                                get_token(T.Keyword, 'SELECT'),
+                                get_token(T.Whitespace, ' '),
+                                TokenGroup(ttype=ST.Identifier, token_list=[
+                                    get_token(ST.QualifierName, 'p'),
+                                    get_token(ST.QualifierOperator, '.'),
+                                    get_token(T.Name, 'sub_part'),
+                                ]),
+                                get_token(T.Punctuation, ','),
+                                get_token(T.Whitespace, ' '),
+                                TokenGroup(ttype=ST.Identifier, token_list=[
+                                    get_token(ST.QualifierName, 'p'),
+                                    get_token(ST.QualifierOperator, '.'),
+                                    get_token(T.Name, 'part'),
+                                ]),
+                                get_token(T.Punctuation, ','),
+                                get_token(T.Whitespace, ' '),
+                                TokenGroup(ttype=ST.Identifier, token_list=[
+                                    get_token(ST.QualifierName, 'p'),
+                                    get_token(ST.QualifierOperator, '.'),
+                                    get_token(T.Name, 'quantity'),
+                                ]),
+                            ]),
+                            get_token(T.Whitespace, ' '),
+                            TokenGroup(ttype=ST.FromClause, token_list=[
+                                get_token(T.Keyword, 'FROM'),
+                                get_token(T.Whitespace, ' '),
+                                TokenGroup(ttype=ST.Identifier, token_list=[
+                                    get_token(T.Name, 'included_parts'),
+                                    get_token(T.Whitespace, ' '),
+                                    get_token(ST.AliasName, 'pr'),
+                                ]),
+                                get_token(T.Punctuation, ','),
+                                get_token(T.Whitespace, ' '),
+                                TokenGroup(ttype=ST.Identifier, token_list=[
+                                    get_token(T.Name, 'parts'),
+                                    get_token(T.Whitespace, ' '),
+                                    get_token(ST.AliasName, 'p'),
+                                ]),
+                            ]),
+                            get_token(T.Whitespace, ' '),
+                            TokenGroup(ttype=ST.WhereClause, token_list=[
+                                get_token(T.Keyword, 'WHERE'),
+                                get_token(T.Whitespace, ' '),
+                                TokenGroup(ttype=ST.Comparison, token_list=[
+                                    TokenGroup(ttype=ST.Identifier, token_list=[
+                                        get_token(ST.QualifierName, 'p'),
+                                        get_token(ST.QualifierOperator, '.'),
+                                        get_token(T.Name, 'part'),
+                                    ]),
+                                    get_token(T.Whitespace, ' '),
+                                    get_token(ST.ComparisonOperator, '='),
+                                    get_token(T.Whitespace, ' '),
+                                    TokenGroup(ttype=ST.Identifier, token_list=[
+                                        get_token(ST.QualifierName, 'pr'),
+                                        get_token(ST.QualifierOperator, '.'),
+                                        get_token(T.Name, 'sub_part'),
+                                    ]),
+                                ]),
+                            ]),
+                            get_token(T.Whitespace, ' '),
+                            get_token(T.Punctuation, ')'),
+                        ]),
+                    ]),
+                ]),
+
+                get_token(T.Whitespace, ' '),
+
+                TokenGroup(ttype=ST.SelectClause, token_list=[
+                    get_token(T.Keyword, 'SELECT'),
+                    get_token(T.Whitespace, ' '),
+                    TokenGroup(ttype=ST.Identifier, token_list=[
+                        get_token(T.Name, 'sub_part'),
+                    ]),
+                    get_token(T.Punctuation, ','),
+                    get_token(T.Whitespace, ' '),
+                    TokenGroup(ttype=ST.Function, token_list=[
+                        get_token(T.Name, 'SUM'),
+                        TokenGroup(ttype=ST.ArgumentList, token_list=[
+                            get_token(T.Punctuation, '('),
+                            TokenGroup(ttype=ST.Identifier, token_list=[
+                                get_token(T.Name, 'quantity'),
+                            ]),
+                            get_token(T.Punctuation, ')')
+                        ]),
+                        get_token(T.Whitespace, ' '),
+                        get_token(T.Keyword, 'AS'),
+                        get_token(T.Whitespace, ' '),
+                        get_token(ST.AliasName, 'total_quantity'),
+                    ]),
+                ]),
+
+                get_token(T.Whitespace, ' '),
+
+                TokenGroup(ttype=ST.FromClause, token_list=[
+                    get_token(T.Keyword, 'FROM'),
+                    get_token(T.Whitespace, ' '),
+                    TokenGroup(ttype=ST.Identifier, token_list=[
+                        get_token(T.Name, 'included_parts'),
+                    ]),
+                ]),
+
+                get_token(T.Whitespace, ' '),
+
+                TokenGroup(ttype=ST.GroupByClause, token_list=[
+                    get_token(T.Keyword, 'GROUP'),
+                    get_token(T.Whitespace, ' '),
+                    get_token(T.Keyword, 'BY'),
+                    get_token(T.Whitespace, ' '),
+                    TokenGroup(ttype=ST.Identifier, token_list=[
+                        get_token(T.Name, 'sub_part'),
+                    ]),
+                ]),
+
+                get_token(T.Punctuation, ';'),
+            ]),
+        ]
+        i = 0
+        print('--')
+        print(sql_text)
+        print('--')
+        for x in p.parse(sql_text):
+            _token_list_tracing_helper(x, exp_stmt[i])
+            i += 1
+        assert i == len(exp_stmt)
+        print('')

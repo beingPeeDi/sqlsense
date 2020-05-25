@@ -91,6 +91,14 @@ class SqlParser(object):
         if token_group.ttype in (ST.RoundBracket, ST.CollectionSet):
             # TODO: Should we check the preceeding token to make sure SELECT is the first keyword in Brackets
             token_group.ttype = ST.SubQuery
+        elif (token_group.ttype in (ST.Select, ST.SelectInto, ST.InsertIntoSelect, ST.SubQuery)
+              and (token_group.last_token().match_type_value(Token(T.Keyword, 'UNION'))
+                   or (token_group.last_token().match_type_value(Token(T.Keyword, 'ALL'))
+                       and token_group.token_before(next_token_index=token_group.last_token_index()).match_type_value(Token(T.Keyword, 'UNION'))
+                       )
+                   )
+              ):  # token_group.has_token_as_immediate_child(Token(T.Keyword, 'UNION')):
+            pass
         else:
             while token_group.ttype is not None and token_group.ttype not in tokengroup_set:
                 # If Select Clause is preceeded by Insert Into Clause, get out of that Clause Token Group
@@ -343,6 +351,13 @@ class SqlParser(object):
         token_group = self._switch_to_parent(token_group)
         return token_group
 
+    def _process_union(self, stmt, token_group, token, tokengroup_set):
+        while token_group.ttype not in (ST.Select, ST.SelectInto, ST.InsertIntoSelect, ST.SubQuery):
+            # Get out of the Token Group until you find Case Expression
+            token_group = self._switch_to_parent(token_group)
+        token_group.append(token)
+        return token_group
+
     def _process_literal_number(self, stmt, token_group, token, tokengroup_set):
         if token_group.ttype == ST.SelectClause:
             select_constant_identifier_grp = TokenGroup(
@@ -416,6 +431,7 @@ class SqlParser(object):
             'Token.Keyword.THEN': (self._process_then, None),
             'Token.Keyword.ELSE': (self._process_else, None),
             'Token.Keyword.END': (self._process_end, None),
+            'Token.Keyword.UNION': (self._process_union, None),
             'Token.Literal.Number': (self._process_literal_number, None),
             'Token.Literal.String': (self._process_literal_string, None),
         }

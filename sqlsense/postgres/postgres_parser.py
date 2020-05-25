@@ -69,6 +69,10 @@ class PostgresParser(SqlParser):
                 token_group.ttype = ST.Function
                 # Function Argument List instead of Sub-Query
                 bracket_grp.ttype = ST.ArgumentList
+            elif token_group.ttype == PT.WithIdentifier and token_group.last_token().ttype == PT.WithQueryAliasName:
+                token_group = token_group.merge_into_token_group(
+                    PT.WithQueryAliasIdentifier, token_list_start_index_included=token_group.last_token_index())
+                bracket_grp.ttype = ST.ArgumentList
             elif token_group.ttype in (ST.In, ST.NotIn):
                 # This can be the CollectionSet or SubQuery (ttype will set to SubQuery in subsequent steps).
                 bracket_grp.ttype = ST.CollectionSet
