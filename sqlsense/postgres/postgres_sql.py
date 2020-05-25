@@ -4,6 +4,7 @@
 
 from pygments import token as T
 
+import sqlsense.postgres.postgres_tokens as PT
 import sqlsense.tokens as ST
 from sqlsense.sql import SqlStatement, Token
 
@@ -27,6 +28,9 @@ class PostgresSqlStatement(SqlStatement):
     def default_schema(self):
         return self._default_schema
 
+    def get_identifiers(self):
+        return super().get_identifiers(tokengroup_set={PT.WithIdentifier, })
+
     def datasets_involved(self):
         """ Returns a list of datasets involved in the Postgres 
         SQL Statement.
@@ -43,7 +47,7 @@ class PostgresSqlStatement(SqlStatement):
             # Datasets info needs to be generated.
             self._datasets = []
             for token in self.get_identifiers():
-                if token.parent.ttype in (ST.FromClause, ):
+                if token.parent.ttype in (ST.FromClause, PT.WithClause):
                     _dataset = {
                         'type': 'NotKnown',
                         'dataset': '',
@@ -65,6 +69,17 @@ class PostgresSqlStatement(SqlStatement):
                             if subquery_ind:
                                 _dataset['dataset'] = _dataset['dataset'] + \
                                     subquery_token.value(True)
+                    elif token.ttype == PT.WithIdentifier:
+                        _dataset['type'] = 'With Query'
+                        for subtoken in token.token_list:
+                            if subtoken.ttype == PT.WithQueryAliasName:
+                                _dataset['alias'] = subtoken.value()
+                            elif subtoken.ttype == PT.WithQueryAliasIdentifier:
+                                for subsubtoken in subtoken.token_list:
+                                    if subsubtoken.ttype == PT.WithQueryAliasName:
+                                        _dataset['alias'] = subtoken.value()
+                            elif subtoken.ttype == ST.SubQuery:
+                                _dataset['dataset'] = subtoken.value()
                     else:
                         _dataset['type'] = 'Dataset'
                         qualifier = []
@@ -155,5 +170,8 @@ class PostgresSqlStatement(SqlStatement):
                             if not_an_alias_ind:
                                 _datafield['datafield'] = _datafield['datafield'] + \
                                     sub_token.value(True)
+                    else:
+                        # No need to process
+                        continue
                     self._datafields.append(_datafield)
         return self._datafields
