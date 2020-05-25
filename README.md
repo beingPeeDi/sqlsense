@@ -13,7 +13,7 @@ Currently sqlsense works only for Select Statements.
 
 ## Features in Development
 
-* Conditional Expression: CASE
+* EXISTS (and NOT EXISTS) Keyword
 
 ## Quick Start
 
