@@ -2337,3 +2337,75 @@ class SelectStatementTest(unittest.TestCase):
             i += 1
         assert i == len(exp_stmt)
         print('')
+
+    def test_015_union(self):
+        p = PostgresParser()
+        sql_text = '''
+        SELECT name, age FROM client
+        UNION
+        SELECT name, age FROM prospect;
+        '''
+        exp_stmt = [
+            PostgresSqlStatement(ttype=ST.Select, token_list=[
+                TokenGroup(ttype=ST.SelectClause, token_list=[
+                    get_token(T.Keyword, 'SELECT'),
+                    get_token(T.Whitespace, ' '),
+                    TokenGroup(ttype=ST.Identifier, token_list=[
+                        get_token(T.Name, 'name'),
+                    ]),
+                    get_token(T.Punctuation, ','),
+                    get_token(T.Whitespace, ' '),
+                    TokenGroup(ttype=ST.Identifier, token_list=[
+                        get_token(T.Name, 'age'),
+                    ]),
+                ]),
+
+                get_token(T.Whitespace, ' '),
+
+                TokenGroup(ttype=ST.FromClause, token_list=[
+                    get_token(T.Keyword, 'FROM'),
+                    get_token(T.Whitespace, ' '),
+                    TokenGroup(ttype=ST.Identifier, token_list=[
+                        get_token(T.Name, 'client'),
+                    ]),
+                ]),
+
+                get_token(T.Whitespace, ' '),
+                get_token(T.Keyword, 'UNION'),
+                get_token(T.Whitespace, ' '),
+
+                TokenGroup(ttype=ST.SelectClause, token_list=[
+                    get_token(T.Keyword, 'SELECT'),
+                    get_token(T.Whitespace, ' '),
+                    TokenGroup(ttype=ST.Identifier, token_list=[
+                        get_token(T.Name, 'name'),
+                    ]),
+                    get_token(T.Punctuation, ','),
+                    get_token(T.Whitespace, ' '),
+                    TokenGroup(ttype=ST.Identifier, token_list=[
+                        get_token(T.Name, 'age'),
+                    ]),
+                ]),
+
+                get_token(T.Whitespace, ' '),
+
+                TokenGroup(ttype=ST.FromClause, token_list=[
+                    get_token(T.Keyword, 'FROM'),
+                    get_token(T.Whitespace, ' '),
+                    TokenGroup(ttype=ST.Identifier, token_list=[
+                        get_token(T.Name, 'prospect'),
+                    ]),
+                ]),
+
+                get_token(T.Punctuation, ';'),
+            ]),
+        ]
+        i = 0
+        print('--')
+        print(sql_text)
+        print('--')
+        for x in p.parse(sql_text):
+            _token_list_tracing_helper(x, exp_stmt[i])
+            i += 1
+        assert i == len(exp_stmt)
+        print('')
