@@ -18,7 +18,7 @@ class PostgresParser(SqlParser):
     def _get_sql_statement(self):
         return PostgresSqlStatement()
 
-    def _process_name(self, stmt, token_group, token):
+    def _process_name(self, stmt, token_group, token, tokengroup_set):
         if token_group.last_token().match_type_value(Token(T.Keyword, 'AS')):
             # Alias follows AS Keyword
             token.ttype = ST.AliasName
@@ -37,7 +37,7 @@ class PostgresParser(SqlParser):
               token_group.ttype == ST.Identifier and token_group.last_token().ttype == T.Name):
             # Case: SELECT A.x+B.y SomeAlias FROM ...
             # here Computed Identifier => A.x+B.y and Identifier => B.y followed by Alias
-            return self._process_name(stmt, self._switch_to_parent(token_group), token)
+            return self._process_name(stmt, self._switch_to_parent(token_group), token, tokengroup_set)
         elif (token_group.ttype == ST.SelectClause and token_group.last_token().ttype not in (T.Keyword, T.Punctuation)):
             # Case: SELECT CASE ... END AS case_alias
             token_group = token_group.merge_into_token_group(
@@ -46,13 +46,19 @@ class PostgresParser(SqlParser):
             token_group.append(token)
         elif token_group.ttype == ST.Identifier:
             token_group.append(token)
+        elif token_group.ttype == PT.WithClause:
+            # Eg. WITH aliasname AS (SQL)
+            token.ttype = PT.WithQueryAliasName
+            with_identifier_grp = TokenGroup([token, ], PT.WithIdentifier)
+            token_group.append(with_identifier_grp)
+            token_group = with_identifier_grp
         else:
             identifier_grp = TokenGroup([token, ], ST.Identifier)
             token_group.append(identifier_grp)
             token_group = identifier_grp
         return token_group
 
-    def _process_punctuation(self, stmt, token_group, token):
+    def _process_punctuation(self, stmt, token_group, token, tokengroup_set):
         if token.value() == '(':
             # Open a New Sub Query Token Group
             bracket_grp = TokenGroup([token, ], ST.RoundBracket)
@@ -63,12 +69,20 @@ class PostgresParser(SqlParser):
                 token_group.ttype = ST.Function
                 # Function Argument List instead of Sub-Query
                 bracket_grp.ttype = ST.ArgumentList
+            elif token_group.ttype == PT.WithIdentifier and token_group.last_token().ttype == PT.WithQueryAliasName:
+                token_group = token_group.merge_into_token_group(
+                    PT.WithQueryAliasIdentifier, token_list_start_index_included=token_group.last_token_index())
+                bracket_grp.ttype = ST.ArgumentList
             elif token_group.ttype in (ST.In, ST.NotIn):
                 # This can be the CollectionSet or SubQuery (ttype will set to SubQuery in subsequent steps).
                 bracket_grp.ttype = ST.CollectionSet
             token_group.append(bracket_grp)
             token_group = bracket_grp
         elif token.value() == ')':
+            if token_group.ttype == ST.SubQuery and token_group.has_token_as_immediate_child(token):
+                # This step is required because when a Sub-Query is closed with ')' we do not switch
+                # to its parent. This is done so that we can add alias to it if it exists
+                return self._process_punctuation(stmt, self._switch_to_parent(token_group), token, tokengroup_set)
             while token_group.ttype not in (ST.RoundBracket, ST.ArgumentList, ST.SubQuery, ST.CollectionSet, ST.ConditionGroup):
                 # Get out of the Token Group until you find the matching opening bracket
                 token_group = self._switch_to_parent(token_group)
@@ -84,13 +98,15 @@ class PostgresParser(SqlParser):
             token.ttype = ST.QualifierOperator
             token_group.append(token)
         elif token.value() == ',':
-            if token_group.ttype in (ST.Identifier, ST.ComputedIdentifier, ST.SelectConstantIdentifier, ST.Function, ST.CaseExpression):
+            if token_group.ttype in (ST.Identifier, ST.ComputedIdentifier, ST.SelectConstantIdentifier, ST.Function, ST.CaseExpression, ST.SubQuery):
                 # Get out of the Token Group, so that we can create another Identifier
+                token_group = self._switch_to_parent(token_group)
+            if token_group.ttype == PT.WithIdentifier:
                 token_group = self._switch_to_parent(token_group)
             token_group.append(token)
         return token_group
 
-    def _process_operator(self, stmt, token_group, token):
+    def _process_operator(self, stmt, token_group, token, tokengroup_set):
         if token.value() == '*':
             # * can be a Wildcard in Select Clause
             if (token_group.ttype == ST.SelectClause or
@@ -119,7 +135,7 @@ class PostgresParser(SqlParser):
                 stmt, token_group, token)
         return token_group
 
-    def _process_limit(self, stmt, token_group, token):
+    def _process_limit(self, stmt, token_group, token, tokengroup_set):
         # Assumption: LIMIT will be at SELECT Statement Level
         limit_clause_grp = TokenGroup([token, ], PT.LimitClause)
         while token_group.ttype not in (ST.Select, ST.SelectInto, ST.InsertIntoSelect, ST.SubQuery):
@@ -127,17 +143,33 @@ class PostgresParser(SqlParser):
         token_group.append(limit_clause_grp)
         return limit_clause_grp
 
-    def _process_keyword_name(self, stmt, token_group, token):
+    def _process_with_clause(self, stmt, token_group, token, tokengroup_set):
+        with_clause_grp = TokenGroup([token, ], PT.WithClause)
+        if token_group.ttype in (ST.RoundBracket, ST.CollectionSet):
+            token_group.ttype = ST.SubQuery
+        else:
+            while token_group.ttype is not None:
+                token_group = self._switch_to_parent(token_group)
+
+        token_group.append(with_clause_grp)
+        return with_clause_grp
+
+    def _process_keyword_name(self, stmt, token_group, token, tokengroup_set):
         token.ttype = T.Name
-        return self._process_name(stmt, token_group, token)
+        return self._process_name(stmt, token_group, token, tokengroup_set)
 
     def _set_rules_(self):
         ''' You may extend this function in Child classes
         '''
         rules_dict = super()._set_rules_()
-        rules_dict['Token.Name'] = self._process_name
-        rules_dict['Token.Punctuation'] = self._process_punctuation
-        rules_dict['Token.Operator'] = self._process_operator
-        rules_dict['Token.Keyword.LIMIT'] = self._process_limit
-        rules_dict['Token.Keyword.NAME'] = self._process_keyword_name
+        rules_dict['Token.Keyword.SELECT'] = (
+            super()._process_select_clause, (ST.InsertIntoClause, PT.WithClause))
+        rules_dict['Token.Keyword.AS'] = (
+            super()._process_as, (ST.SelectClause, ST.FromClause, PT.WithClause))
+        rules_dict['Token.Name'] = (self._process_name, None)
+        rules_dict['Token.Punctuation'] = (self._process_punctuation, None)
+        rules_dict['Token.Operator'] = (self._process_operator, None)
+        rules_dict['Token.Keyword.LIMIT'] = (self._process_limit, None)
+        rules_dict['Token.Keyword.NAME'] = (self._process_keyword_name, None)
+        rules_dict['Token.Keyword.WITH'] = (self._process_with_clause, None)
         return rules_dict

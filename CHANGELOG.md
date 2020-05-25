@@ -1,4 +1,4 @@
-# Initial Release (on GitHub) (released 12th May 2020)
+# Initial Release (on GitHub) (released 25th May 2020)
 
 - SELECT Statement Parsing
   - SELECT Statements with Basic Constructs
@@ -21,13 +21,19 @@
     - OR
     - NOT
   - DISTINCT
+  - UNION / UNION ALL
   - LIMIT Clause (for Postgres)
+  - WITH Clasue (for Postgres)
+    - Non-Recursive
+    - Recursive
   - Identifier Types
     - Identifier (for table, columns)
     - Computed Identifier (e.g. Col1+Col2, Col1/100, 200*200)
     - Constant Identifier (only for SELECT Clause)(e.g. SELECT 1 FROM ...)
     - Function
     - Sub Query
+    - With Identifier (within WITH Clause)
+    - With Query Alias Identifier (within WITH Clause)
   - CASE Conditional Expression Constructs
     - Is listed as ComputedIdentifier when used in SELECT Clause
 - Metadata Extraction

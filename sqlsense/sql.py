@@ -79,15 +79,15 @@ class TokenGroup(Token):
             for item in token.flatten(suppress_whitespace, suppress_comment):
                 yield item
 
-    def get_identifiers(self):
+    def get_identifiers(self, tokengroup_set=set()):
         """ Generates Identifiers in the SQL Statement.
         """
         for token in self._token_list:
-            if (token._ttype in (ST.Identifier, ST.Function, ST.SubQuery) or
+            if (token._ttype in {ST.Identifier, ST.Function, ST.SubQuery}.union(tokengroup_set) or
                     (token._ttype in (ST.ComputedIdentifier, ST.SelectConstantIdentifier) and token.parent._ttype == ST.SelectClause)):
                 yield token
             if isinstance(token, TokenGroup):
-                for item in token.get_identifiers():
+                for item in token.get_identifiers(tokengroup_set):
                     yield item
 
     def append(self, token):
