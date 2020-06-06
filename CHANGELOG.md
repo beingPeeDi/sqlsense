@@ -1,4 +1,4 @@
-# Initial Release (on GitHub) (released 25th May 2020)
+# Initial Release (on GitHub) (released 7th June 2020)
 
 - SELECT Statement Parsing
   - SELECT Statements with Basic Constructs
@@ -15,6 +15,7 @@
     - IN (NOT IN)
     - LIKE (NOT LIKE)
     - BETWEEN (NOT BETWEEN)
+    - EXISTS (NOT EXISTS)
     - IS
   - Logical Operator
     - AND

@@ -13,7 +13,8 @@ Currently sqlsense works only for Select Statements.
 
 ## Features in Development
 
-* EXISTS (and NOT EXISTS) Keyword
+* Window Functions
+* Data-Modifying Statements in WITH Clause
 
 ## Quick Start
 
