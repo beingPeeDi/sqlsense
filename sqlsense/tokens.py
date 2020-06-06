@@ -79,6 +79,7 @@ Not = Condition.Not
 NotBetween = Condition.NotBetween
 NotLike = Condition.NotLike
 NotIn = Condition.NotIn
+NotExists = Condition.NotExists
 
 CaseExpression = TokenGroup.CaseExpression
 WhenExpression = TokenGroup.WhenExpression
