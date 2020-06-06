@@ -256,6 +256,22 @@ class SqlParser(object):
         token_group.ttype = ST.Comparison
         return token_group
 
+    def _process_exists(self, stmt, token_group, token, tokengroup_set):
+        while token_group.ttype not in (ST.WhereClause,  # ST.JoinOnClause, ST.HavingClause,
+                                        ST.RoundBracket, ST.ConditionGroup, ST.Not, ):  # ST.Condition,
+                                        # ST.CaseExpression, ST.WhenExpression, ST.ThenExpression, ST.ElseExpression):
+            # Get out of the Token Group until you find Condition Clause
+            token_group = self._switch_to_parent(token_group)
+        if token_group.ttype == ST.RoundBracket:
+            token_group.ttype = ST.ConditionGroup
+        if token_group.ttype == ST.Not and token_group.last_token().match_type_value(Token(ST.LogicalOperator, 'NOT')):
+            token_group.ttype = ST.NotExists
+            token_group.append(token)
+            return token_group
+        exists_grp = TokenGroup([token, ], ST.Exists)
+        token_group.append(exists_grp)
+        return exists_grp
+
     def _process_into(self, stmt, token_group, token, tokengroup_set):
         # Assumption: INTO Clause will never be in a Sub-Query
         while token_group.ttype not in (ST.InsertIntoClause, ST.SelectClause):
@@ -423,6 +439,7 @@ class SqlParser(object):
             'Token.Keyword.LIKE': (self._process_like, None),
             'Token.Keyword.BETWEEN': (self._process_between, None),
             'Token.Keyword.IS': (self._process_is, None),
+            'Token.Keyword.EXISTS': (self._process_exists, None),
             'Token.Keyword.AS': (self._process_as, (ST.SelectClause, ST.FromClause)),
             'Token.Keyword.INTO': (self._process_into, None),
             'Token.Keyword.NOT': (self._process_not, None),

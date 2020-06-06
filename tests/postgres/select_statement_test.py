@@ -2409,3 +2409,164 @@ class SelectStatementTest(unittest.TestCase):
             i += 1
         assert i == len(exp_stmt)
         print('')
+
+    def test_016_exists(self):
+        p = PostgresParser()
+        sql_text = '''
+        SELECT name, age 
+        FROM client
+        WHERE NOT EXISTS (SELECT 1 FROM clients_contacted_in_last_5_days c5d WHERE c5d.client_id = client.client_id)
+        AND EXISTS (SELECT 1 FROM dept d WHERE d.dept_id = client.dept_id AND dept_loc = 'MUMBAI');
+        '''
+        exp_stmt = [
+            PostgresSqlStatement(ttype=ST.Select, token_list=[
+                TokenGroup(ttype=ST.SelectClause, token_list=[
+                    get_token(T.Keyword, 'SELECT'),
+                    get_token(T.Whitespace, ' '),
+                    TokenGroup(ttype=ST.Identifier, token_list=[
+                        get_token(T.Name, 'name'),
+                    ]),
+                    get_token(T.Punctuation, ','),
+                    get_token(T.Whitespace, ' '),
+                    TokenGroup(ttype=ST.Identifier, token_list=[
+                        get_token(T.Name, 'age'),
+                    ]),
+                ]),
+
+                get_token(T.Whitespace, ' '),
+
+                TokenGroup(ttype=ST.FromClause, token_list=[
+                    get_token(T.Keyword, 'FROM'),
+                    get_token(T.Whitespace, ' '),
+                    TokenGroup(ttype=ST.Identifier, token_list=[
+                        get_token(T.Name, 'client'),
+                    ]),
+                ]),
+
+                get_token(T.Whitespace, ' '),
+
+                TokenGroup(ttype=ST.WhereClause, token_list=[
+                    get_token(T.Keyword, 'WHERE'),
+                    get_token(T.Whitespace, ' '),
+                    TokenGroup(ttype=ST.NotExists, token_list=[
+                        get_token(ST.LogicalOperator, 'NOT'),
+                        get_token(T.Whitespace, ' '),
+                        get_token(T.Keyword, 'EXISTS'),
+                        get_token(T.Whitespace, ' '),
+                        TokenGroup(ttype=ST.SubQuery, token_list=[
+                            get_token(T.Punctuation, '('),
+                            TokenGroup(ttype=ST.SelectClause, token_list=[
+                                get_token(T.Keyword, 'SELECT'),
+                                get_token(T.Whitespace, ' '),
+                                TokenGroup(ttype=ST.SelectConstantIdentifier, token_list=[
+                                    get_token(T.Number.Integer, '1'),
+                                ]),
+                            ]),
+                            get_token(T.Whitespace, ' '),
+                            TokenGroup(ttype=ST.FromClause, token_list=[
+                                get_token(T.Keyword, 'FROM'),
+                                get_token(T.Whitespace, ' '),
+                                TokenGroup(ttype=ST.Identifier, token_list=[
+                                    get_token(
+                                        T.Name, 'clients_contacted_in_last_5_days'),
+                                    get_token(T.Whitespace, ' '),
+                                    get_token(ST.AliasName, 'c5d'),
+                                ]),
+                            ]),
+                            get_token(T.Whitespace, ' '),
+                            TokenGroup(ttype=ST.WhereClause, token_list=[
+                                get_token(T.Keyword, 'WHERE'),
+                                get_token(T.Whitespace, ' '),
+                                TokenGroup(ttype=ST.Comparison, token_list=[
+                                    TokenGroup(ttype=ST.Identifier, token_list=[
+                                        get_token(ST.QualifierName, 'c5d'),
+                                        get_token(ST.QualifierOperator, '.'),
+                                        get_token(T.Name, 'client_id'),
+                                    ]),
+                                    get_token(T.Whitespace, ' '),
+                                    get_token(ST.ComparisonOperator, '='),
+                                    get_token(T.Whitespace, ' '),
+                                    TokenGroup(ttype=ST.Identifier, token_list=[
+                                        get_token(ST.QualifierName, 'client'),
+                                        get_token(ST.QualifierOperator, '.'),
+                                        get_token(T.Name, 'client_id'),
+                                    ]),
+                                ]),
+                            ]),
+                            get_token(T.Punctuation, ')'),
+                        ]),
+                    ]),
+                    get_token(T.Whitespace, ' '),
+                    get_token(ST.LogicalOperator, 'AND'),
+                    get_token(T.Whitespace, ' '),
+                    TokenGroup(ttype=ST.Exists, token_list=[
+                        get_token(T.Keyword, 'EXISTS'),
+                        get_token(T.Whitespace, ' '),
+                        TokenGroup(ttype=ST.SubQuery, token_list=[
+                            get_token(T.Punctuation, '('),
+                            TokenGroup(ttype=ST.SelectClause, token_list=[
+                                get_token(T.Keyword, 'SELECT'),
+                                get_token(T.Whitespace, ' '),
+                                TokenGroup(ttype=ST.SelectConstantIdentifier, token_list=[
+                                    get_token(T.Number.Integer, '1'),
+                                ]),
+                            ]),
+                            get_token(T.Whitespace, ' '),
+                            TokenGroup(ttype=ST.FromClause, token_list=[
+                                get_token(T.Keyword, 'FROM'),
+                                get_token(T.Whitespace, ' '),
+                                TokenGroup(ttype=ST.Identifier, token_list=[
+                                    get_token(T.Name, 'dept'),
+                                    get_token(T.Whitespace, ' '),
+                                    get_token(ST.AliasName, 'd'),
+                                ]),
+                            ]),
+                            get_token(T.Whitespace, ' '),
+                            TokenGroup(ttype=ST.WhereClause, token_list=[
+                                get_token(T.Keyword, 'WHERE'),
+                                get_token(T.Whitespace, ' '),
+                                TokenGroup(ttype=ST.Comparison, token_list=[
+                                    TokenGroup(ttype=ST.Identifier, token_list=[
+                                        get_token(ST.QualifierName, 'd'),
+                                        get_token(ST.QualifierOperator, '.'),
+                                        get_token(T.Name, 'dept_id'),
+                                    ]),
+                                    get_token(T.Whitespace, ' '),
+                                    get_token(ST.ComparisonOperator, '='),
+                                    get_token(T.Whitespace, ' '),
+                                    TokenGroup(ttype=ST.Identifier, token_list=[
+                                        get_token(ST.QualifierName, 'client'),
+                                        get_token(ST.QualifierOperator, '.'),
+                                        get_token(T.Name, 'dept_id'),
+                                    ]),
+                                ]),
+                                get_token(T.Whitespace, ' '),
+                                get_token(ST.LogicalOperator, 'AND'),
+                                get_token(T.Whitespace, ' '),
+                                TokenGroup(ttype=ST.Comparison, token_list=[
+                                    TokenGroup(ttype=ST.Identifier, token_list=[
+                                        get_token(T.Name, 'dept_loc'),
+                                    ]),
+                                    get_token(T.Whitespace, ' '),
+                                    get_token(ST.ComparisonOperator, '='),
+                                    get_token(T.Whitespace, ' '),
+                                    get_token(T.String, "'MUMBAI'"),
+                                ]),
+                            ]),
+                            get_token(T.Punctuation, ')'),
+                        ]),
+                    ]),
+                ]),
+
+                get_token(T.Punctuation, ';'),
+            ]),
+        ]
+        i = 0
+        print('--')
+        print(sql_text)
+        print('--')
+        for x in p.parse(sql_text):
+            _token_list_tracing_helper(x, exp_stmt[i])
+            i += 1
+        assert i == len(exp_stmt)
+        print('')
